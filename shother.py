@@ -7,6 +7,7 @@ pygame.init()
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
+TILE_SIZE = 20
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Shooter")
@@ -259,11 +260,66 @@ class Grenade(pygame.sprite.Sprite):
         # update grenade position
         self.rect.x += dx
         self.rect.y += dy
+        ### cuntdown timer
+        self.timer -= 1
+        if self.timer <= 0:
+            self.kill()
+            explosion = Explosion(self.rect.x, self.rect.y, 0.5)
+            explosion_group.add(explosion)
+            # do damage to anyone that is nearby
+
+            if (
+                abs(self.rect.centerx - player.rect.centerx) < TILE_SIZE * 2
+                and abs(self.rect.centerx - player.rect.centerx) < TILE_SIZE * 2
+            ):
+                player.health -= 50
+            if (
+                abs(self.rect.centerx - player.rect.centerx) < TILE_SIZE * 2
+                and abs(self.rect.centerx - player.rect.centerx) < TILE_SIZE * 2
+            ):
+                player.health -= 50
+                pass
+
+    # -----------------------EXPLOSION GRENADE
+
+
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, x, y, scale):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = []
+        for num in range(1, 4):
+            img = pygame.image.load(
+                f"images/caracters/players/warrior_woman_03/1_IDLE_00{num}.png"
+            ).convert_alpha()
+            img = pygame.transform.scale(
+                img, (int(img.get_width() * scale), int(img.get_height() * scale))
+            )
+            self.image.append(img)
+        self.frame_index = 0
+        self.images = self.images[self.frame_index]
+        self.rect = self.image.get_rect()
+        self.rect_center = (x, y)
+        self.counter = 0
+
+    def updatee(self):
+        EXPLOSION_SPEED = 4
+
+        # update explosion animation
+        self.counter += 1
+        if self.counter >= EXPLOSION_SPEED:
+            self.counter = 0
+            self.frame_index += 1
+
+            if self.frame_index >= len(self.images):
+                self.kill()
+            else:
+                self.image = self.image[self.frame_index]
 
 
 # creante sprite group
 bullet_group = pygame.sprite.Group()
 grenade_group = pygame.sprite.Group()
+explosion_group = pygame.sprite.Group()
 
 
 player = Soldier("players", 200, 200, 0.2, 5, 20, 5)  # creo una instancia de mi clase
@@ -287,6 +343,9 @@ while run:
 
     grenade_group.update()
     grenade_group.draw(screen)
+
+    explosion_group.update()
+    explosion_group.draw(screen)
 
     # update player actions
     if player.alive:  # perfec transition for player actions
