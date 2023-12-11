@@ -141,6 +141,7 @@ class Soldier(pygame.sprite.Sprite):  # voy
         if self.rect.bottom + dy > 300:
             dy = 300 - self.rect.bottom
             self.in_air = False
+            # self.speed = 0
 
         # update rectangle position
         self.rect.x += dx
@@ -209,14 +210,17 @@ class Bullet(pygame.sprite.Sprite):
         # move bullet
         self.rect.x += self.direction * self.speed
         # check if bullet has gone off screen/si fue disparada
-        if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH - 300:
+        if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
             self.kill()
+            print("check if bullet has gone off screen/si fue disparada")
+
         # check collition with characters
         if pygame.sprite.spritecollide(player, bullet_group, False):
             if player.alive:
                 player.health -= 5
-                print(player.health)
+                print("# check collition with characters", player.health)
                 self.kill()
+                print("se elimino bullet")
         if pygame.sprite.spritecollide(enemy, bullet_group, False):
             if enemy.alive:
                 enemy.health -= 25
@@ -230,7 +234,7 @@ class Grenade(pygame.sprite.Sprite):
         self.timer = 100
         self.vel__y = -11
         self.speed = 7
-        self.image = grenade_img  # ver
+        self.image = grenade_img
         self.rect = self.image.get_rect()
         self.rect_center = (x, y)
         self.direction = direction
@@ -239,12 +243,22 @@ class Grenade(pygame.sprite.Sprite):
         self.vel__y += GRAVITY
         dx = self.direction * self.speed
         dy = self.vel__y
-        # update grenade position
-        self.rect.x += dx
-        self.rect.y += dy
+
         # check collision with floor
         if self.rect.bottom + dy > 300:
             dy = 300 - self.rect.bottom
+            self.speed = 0
+            print("grenade check collision with floor")
+
+        # check collision with walls
+        if self.rect.left + dx < 0 or self.rect.right + dx > SCREEN_WIDTH:
+            self.direction *= -1
+            dx = self.direction * self.speed
+            print("grenade check collision with walls")
+
+        # update grenade position
+        self.rect.x += dx
+        self.rect.y += dy
 
 
 # creante sprite group
@@ -328,7 +342,7 @@ while run:
                 moving_right = False
             if event.key == pygame.K_SPACE:
                 shoot = False
-            if event.key == pygame.K_s:
+            if event.key == pygame.K_g:
                 granade = False
                 grenade_thrown = False  # granada lanzada
 
