@@ -17,16 +17,22 @@ FPS = 60
 # define game vsriables
 GRAVITY = 0.75
 
-# define player actionvariables
+# define player action variables
 moving_left = False
 moving_right = False
 shoot = False
+grenade = False
+grenade_thrown = False
 
 # bullet
 bullet_img = pygame.image.load(
     "images/gui/hi_overlays/hi_overlay_variant_cubes_x1_1_png_1354840427.png"
 ).convert_alpha()
 
+# grenade
+grenade_img = pygame.image.load(
+    "images/gui/hi_overlays/hi_overlay_variant_hearts_x1_1_png_1354840444.png"
+).convert_alpha()
 
 # define colours
 BG = (144, 201, 120)
@@ -38,7 +44,9 @@ def draw_bg():
 
 
 class Soldier(pygame.sprite.Sprite):  # voy
-    def __init__(self, char_type, x, y, scale, speed, ammo):  # propios de cada objeto
+    def __init__(
+        self, char_type, x, y, scale, speed, ammo, grenades
+    ):  # propios de cada objeto
         pygame.sprite.Sprite.__init__(self)
         # voy a heredar algunas de las funcionabilidades de la clase sprite
         self.alive = True
@@ -47,6 +55,7 @@ class Soldier(pygame.sprite.Sprite):  # voy
         self.ammo = ammo  # municiones
         self.start_ammo = ammo
         self.shoot_cooldown = 0
+        self.grenades = grenades
 
         self.health = 100  # salud
         self.max_health = self.health
@@ -69,11 +78,8 @@ class Soldier(pygame.sprite.Sprite):  # voy
         for animation in animation_types:
             # reset temporary list of images
             temp_list = []
+
             # count number of files in the folder
-            # images/caracters/players/cowgirl/Idle (5).png
-            # images/caracters/players/cowgirl/IDLE/Idle (4).png
-            # images/caracters/players/Shoot/Shoot (1).png
-            # images/caracters/players/cowgirl/Deadzzzzzzzz
             num_of_frames = len(
                 os.listdir(f"images/caracters/{self.char_type}/cowgirl/{animation}")
             )
@@ -203,12 +209,13 @@ class Bullet(pygame.sprite.Sprite):
         # move bullet
         self.rect.x += self.direction * self.speed
         # check if bullet has gone off screen/si fue disparada
-        if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH - 100:
+        if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH - 300:
             self.kill()
         # check collition with characters
         if pygame.sprite.spritecollide(player, bullet_group, False):
             if player.alive:
                 player.health -= 5
+                print(player.health)
                 self.kill()
         if pygame.sprite.spritecollide(enemy, bullet_group, False):
             if enemy.alive:
@@ -217,10 +224,36 @@ class Bullet(pygame.sprite.Sprite):
                 self.kill()
 
 
-bullet_group = pygame.sprite.Group()
+class Grenade(pygame.sprite.Sprite):
+    def __init__(self, x, y, direction):
+        pygame.sprite.Sprite.__init__(self)
+        self.timer = 100
+        self.vel__y = -11
+        self.speed = 7
+        self.image = grenade_img  # ver
+        self.rect = self.image.get_rect()
+        self.rect_center = (x, y)
+        self.direction = direction
 
-player = Soldier("players", 200, 200, 0.2, 5, 10)  # creo una instancia de mi clase
-enemy = Soldier("players", 400, 300, 0.2, 5, 20)
+    def update(self):
+        self.vel__y += GRAVITY
+        dx = self.direction * self.speed
+        dy = self.vel__y
+        # update grenade position
+        self.rect.x += dx
+        self.rect.y += dy
+        # check collision with floor
+        if self.rect.bottom + dy > 300:
+            dy = 300 - self.rect.bottom
+
+
+# creante sprite group
+bullet_group = pygame.sprite.Group()
+grenade_group = pygame.sprite.Group()
+
+
+player = Soldier("players", 200, 200, 0.2, 5, 20, 5)  # creo una instancia de mi clase
+enemy = Soldier("players", 400, 300, 0.2, 5, 20, 5)
 
 
 run = True
@@ -234,16 +267,32 @@ while run:
     enemy.update()
     enemy.draw()
 
-    # update and draw groups
+    # update and draw
     bullet_group.update()
     bullet_group.draw(screen)
 
+    grenade_group.update()
+    grenade_group.draw(screen)
+
     # update player actions
-    # perfec transition for player actions
-    if player.alive:
+    if player.alive:  # perfec transition for player actions
         if shoot:
             # shoot bullet
             player.shoot()
+
+            # thow granades
+        elif grenade and grenade_thrown == False and player.grenades > 0:
+            grenade = Grenade(
+                player.rect.centerx + (0.5 * player.rect.size[0] * player.direction),
+                player.rect.top,
+                player.direction,
+            )
+            grenade_group.add(grenade)
+            # reduce grenades
+            player.grenades -= 1
+            grenade_thrown = True
+            print(player.grenades)
+
         if player.in_air:
             player.update_action(2)  # 2: jump
         elif moving_left or moving_right:
@@ -264,7 +313,9 @@ while run:
                 moving_right = True
             if event.key == pygame.K_SPACE:
                 shoot = True
-            if event.key == pygame.K_w and player.alive:
+            if event.key == pygame.K_g:
+                granade = True
+            if event.key == pygame.K_s and player.alive:
                 player.jump = True
             if event.key == pygame.K_ESCAPE:
                 run = False
@@ -277,6 +328,9 @@ while run:
                 moving_right = False
             if event.key == pygame.K_SPACE:
                 shoot = False
+            if event.key == pygame.K_s:
+                granade = False
+                grenade_thrown = False  # granada lanzada
 
     pygame.display.update()
 pygame.quit()
