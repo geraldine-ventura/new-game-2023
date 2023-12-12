@@ -1,7 +1,6 @@
 import pygame
 import os
 
-#####lalala
 # shother.py
 pygame.init()
 
@@ -32,19 +31,19 @@ bullet_img = pygame.image.load(
 
 # grenade
 grenade_img = pygame.image.load(
-    "images/gui/hi_overlays/hi_overlay_variant_hearts_x1_1_png_1354840444.png"
+    "images/gui/hi_overlays/hi_overlay_variant_rocketships_x1_1_png_1354840462.png"
 ).convert_alpha()
 
 ###-----------------------box (buscar split)-------->
 # pick up boxes
 health_box_img = pygame.image.load(
-    "images/gui/set_gui_01/Data/Banner/Banner04.png"
+    "images/tileset/forest/Objects/Mushroom_2.png"
 ).convert_alpha()
 ammo_box_img = pygame.image.load(
-    "images/gui/set_gui_01/Data/Banner/Banner04.png"
+    "images/tileset/forest/Objects/Crate.png"
 ).convert_alpha()
 grenade_box_img = pygame.image.load(
-    "images/gui/set_gui_01/Data/Banner/Banner04.png"
+    "images/tileset/forest/Objects/Mushroom_1.png"
 ).convert_alpha()
 item_boxes = {
     "Health": health_box_img,
@@ -108,17 +107,22 @@ class Soldier(pygame.sprite.Sprite):  # voy
 
             # count number of files in the folder
             num_of_frames = len(
-                os.listdir(f"images/caracters/{self.char_type}/cowgirl/{animation}")
+                os.listdir(f"images/caracters/{self.char_type}/{animation}")
             )
 
             for i in range(num_of_frames):
-                img = pygame.image.load(
-                    f"images/caracters/{self.char_type}/cowgirl/{animation}/{animation} ({i+1}).png"
-                ).convert_alpha()
-                img = pygame.transform.scale(
-                    img, (int(img.get_width() * scale), int(img.get_height() * scale))
-                )  # "self." es una variable de instancia,sera especifico para ese jugador
-                temp_list.append(img)
+                # images/caracters/player/Idle
+                # images/caracters/enemy/Idle/Idle (6).png
+
+                if i > 0 and i <= num_of_frames:
+                    img = pygame.image.load(
+                        f"images/caracters/{self.char_type}/{animation}/{animation} ({i}).png"
+                    ).convert_alpha()
+                    img = pygame.transform.scale(
+                        img,
+                        (int(img.get_width() * scale), int(img.get_height() * scale)),
+                    )  # "self." es una variable de instancia,sera especifico para ese jugador
+                    temp_list.append(img)
 
             self.animation_list.append(temp_list)  # list of lists
 
@@ -241,13 +245,13 @@ class ItemBox(pygame.sprite.Sprite):  # cuadro de elementos
         if pygame.sprite.collide_rect(self, player):
             if self.item_type == "Health":
                 print(player.health)
-                player.health += 25
+                player.health += 20
                 print(player.health)
                 if player.health > player.max_health:
                     player.health = player.max_health
 
             elif self.item_type == "Ammo":  # municiones
-                player.ammo += 15
+                player.ammo += 10
             elif self.item_type == "Grenade":
                 player.grenades += 3
 
@@ -411,11 +415,11 @@ item_box_group.add(item_box)
 
 
 ##-------------boxes--------------
-player = Soldier("players", 200, 200, 0.2, 5, 20, 5)  # creo una instancia de mi clase
+player = Soldier("player", 200, 200, 0.2, 5, 20, 5)  # creo una instancia
 health_bar = HealthBar(10, 10, player.health, player.health)
 
-enemy = Soldier("players", 400, 500, 0.2, 5, 20, 5)
-enemy2 = Soldier("players", 300, 300, 0.2, 5, 20, 5)
+enemy = Soldier("enemy", 400, 500, 0.1, 5, 20, 5)
+enemy2 = Soldier("enemy", 300, 300, 0.1, 5, 20, 5)
 enemy_group.add(enemy)
 enemy_group.add(enemy2)
 
@@ -429,7 +433,7 @@ while run:
     # show ammo
     draw_text(f"AMMO: ", font, WHILE, 10, 35)
     for x in range(player.ammo):
-        screen.blit(bullet_img, (90 + (x + 10), 40))
+        screen.blit(bullet_img, (90 + (x + 20), 40))
 
     # show grenade
     draw_text(f"GRENADE: ", font, WHILE, 10, 60)
@@ -497,6 +501,8 @@ while run:
                 shoot = True
             if event.key == pygame.K_g:
                 granade = True
+                print("granade", granade)
+                grenade_thrown = True  # granada lanzada
             if event.key == pygame.K_s and player.alive:
                 player.jump = True
             if event.key == pygame.K_ESCAPE:
