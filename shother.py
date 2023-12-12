@@ -56,6 +56,8 @@ item_boxes = {
 BG = (144, 201, 120)
 RED = (255, 0, 0)
 WHILE = (255, 255, 255)
+GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
 font = pygame.font.SysFont("Futura", 30)
 
 
@@ -264,6 +266,11 @@ class HealthBar:
         # updatewith new health
         self.health = health
         pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
+        # calculate health radio
+        ratio = self.health / self.max_health
+        pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154 * ratio, 24))
+        pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
+        pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -416,6 +423,9 @@ run = True
 while run:
     clock.tick(FPS)
     draw_bg()
+    # show  player health
+    health_bar.draw(player.health)
+
     # show ammo
     draw_text(f"AMMO: ", font, WHILE, 10, 35)
     for x in range(player.ammo):
