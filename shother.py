@@ -9,8 +9,9 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
 TILE_SIZE = 20  # tamaño del mosaico
 
+# create my window of game
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Shooter")
+pygame.display.set_caption("Shooter-Girl")
 
 # set frame rate limit
 clock = pygame.time.Clock()
@@ -23,7 +24,7 @@ moving_left = False
 moving_right = False
 shoot = False
 grenade = False
-grenade_thrown = False
+tirar_granada = False
 
 # bullet
 bullet_img = pygame.image.load(
@@ -40,7 +41,7 @@ grenade_img = pygame.image.load(
 health_box_img = pygame.image.load(
     "images/tileset/forest/Objects/Mushroom_2.png"
 ).convert_alpha()
-ammo_box_img = pygame.image.load(
+bullet_box_img = pygame.image.load(
     "images/tileset/forest/Objects/Crate.png"
 ).convert_alpha()
 grenade_box_img = pygame.image.load(
@@ -48,7 +49,7 @@ grenade_box_img = pygame.image.load(
 ).convert_alpha()
 item_boxes = {
     "Health": health_box_img,
-    "Ammo": ammo_box_img,
+    "bullet": bullet_box_img,
     "Grenade": grenade_box_img,
 }
 ###------------------------------->
@@ -72,19 +73,19 @@ def draw_bg():
 
 class Soldier(pygame.sprite.Sprite):  # voy
     def __init__(
-        self, char_type, x, y, scale, speed, ammo, grenades
+        self, char_type, x, y, scale, speed, bullet, grenades
     ):  # propios de cada objeto
         pygame.sprite.Sprite.__init__(self)
         # voy a heredar algunas de las funcionabilidades de la clase sprite
         self.alive = True
         self.char_type = char_type
         self.speed = speed
-        self.ammo = ammo  # municiones
-        self.start_ammo = ammo
+        self.bullet = bullet  # municiones
+        self.start_bullet = bullet
         self.shoot_cooldown = 0
         self.grenades = grenades
 
-        self.health = 100  # salud
+        self.health = 150  # salud
         self.max_health = self.health
 
         self.direction = 1
@@ -99,9 +100,9 @@ class Soldier(pygame.sprite.Sprite):  # voy
 
         # ai specific variables
         self.move_counter = 0
-        self.idling = False
+        self.idling = False  # realenti
         self.idling_counter = False
-        self.vision = pygame.Rect(0, 0, 130, 20)
+        self.vision = pygame.Rect(0, 0, 100, 20)
 
         self.update_time = pygame.time.get_ticks()
 
@@ -187,8 +188,8 @@ class Soldier(pygame.sprite.Sprite):  # voy
         self.rect.y += dy
 
     def shoot(self):
-        if self.shoot_cooldown == 0 and self.ammo > 0:
-            self.shoot_cooldown = 20
+        if self.shoot_cooldown == 0 and self.bullet > 0:  # ver
+            self.shoot_cooldown = 20  # recarga inicialjugador
             bullet = Bullet(
                 self.rect.centerx + (0.80 * self.rect.size[0] * self.direction),
                 self.rect.centery,
@@ -196,8 +197,8 @@ class Soldier(pygame.sprite.Sprite):  # voy
             )
 
             bullet_group.add(bullet)
-            # reduce ammo
-            self.ammo -= 1
+            # reduce bullet
+            self.bullet -= 1
 
     # PATRULLA
     def ai(self):
@@ -205,7 +206,7 @@ class Soldier(pygame.sprite.Sprite):  # voy
         if self.alive and player.alive:
             # estado inactivo y estado no inactivo
             if (
-                self.idling == False and random.randint(1, 200) == 1
+                self.idling == False and random.randint(1, 100) == 1
             ):  # controla la probabilidad de que la accion suceda
                 self.update_action(0)  # 0: idle , cero esta inactivo
                 self.idling = True  # funciona en realenti
@@ -239,7 +240,7 @@ class Soldier(pygame.sprite.Sprite):  # voy
                     )
                     pygame.draw.rect(
                         screen, RED, self.vision
-                    )  ##veo el rectangulo, ouedo borrar esta linea
+                    )  ##veo el rectangulo, puedo borrar esta linea
 
                     if self.move_counter > TILE_SIZE:
                         self.direction *= -1
@@ -284,7 +285,6 @@ class Soldier(pygame.sprite.Sprite):  # voy
             self.speed = 0
             self.alive = False
             self.update_action(3)
-            ######-animation_types = ["Idle", "Run", "Jump", "Dead"]
 
     def draw(self):
         screen.blit(pygame.transform.flip(self.image, self.flip, False), self.rect)
@@ -307,15 +307,20 @@ class ItemBox(pygame.sprite.Sprite):  # cuadro de elementos
         if pygame.sprite.collide_rect(self, player):
             if self.item_type == "Health":
                 print(player.health)
-                player.health += 10
+                player.health += 50
                 print(player.health)
                 if player.health > player.max_health:
                     player.health = player.max_health
 
-            elif self.item_type == "Ammo":  # municiones
-                player.ammo += 10
+            elif self.item_type == "bullet":  # municiones
+                print(player.bullet)
+                player.bullet += 5
+                print(player.bullet)
+
             elif self.item_type == "Grenade":
-                player.grenades += 5
+                print(player.grenades)
+                player.grenades += 5  # aumenta 5 grsnadas
+                print(player.grenades)
 
             # delete the item box
             self.kill()
@@ -332,6 +337,7 @@ class HealthBar:
         # updatewith new health
         self.health = health
         pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
+
         # calculate health radio
         ratio = self.health / self.max_health
         pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154 * ratio, 24))
@@ -348,28 +354,29 @@ class Bullet(pygame.sprite.Sprite):
         self.rect_center = (x, y)
         self.direction = direction
 
-    def update(self):
-        # move bullet
+        # MOVE BULLET
+        # check if bullet has gone off screen/si fue disparada
         self.rect.x += self.direction * self.speed
         # check if bullet has gone off screen/si fue disparada
         if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH:
             self.kill()
-            print("check if bullet has gone off screen/si fue disparada")
+            print("se elimino bullet por salir de pantalla")
 
         # check collition with characters
         if pygame.sprite.spritecollide(player, bullet_group, False):
             if player.alive:
                 player.health -= 5
-                print("# check collition with characters", player.health)
+                print("health- enemy: ", enemy.health)
                 self.kill()
-                print("se elimino bullet")
+                print("se elimino bullet por coalision a player ")
 
         for enemy in enemy_group:
             if pygame.sprite.spritecollide(enemy, bullet_group, False):
                 if enemy.alive:
-                    enemy.health -= 25
-                    print(enemy.health)
+                    enemy.health -= 5
+                    print("health- enemy: ", enemy.health)
                     self.kill()
+                    print("se elimino bullet por coalision a enemy ")
 
 
 class Grenade(pygame.sprite.Sprite):
@@ -403,8 +410,9 @@ class Grenade(pygame.sprite.Sprite):
         # update grenade position
         self.rect.x += dx
         self.rect.y += dy
-        ### cuntdown timer
+        ### countdown timer
         self.timer -= 1
+
         if self.timer <= 0:
             self.kill()
             explosion = Explosion(self.rect.x, self.rect.y, 0.5)
@@ -422,7 +430,9 @@ class Grenade(pygame.sprite.Sprite):
                     and abs(self.rect.centery - enemy.rect.centery) < TILE_SIZE * 2
                 ):
                     enemy.health -= 50
-                    print(enemy.health)
+                    print("enemy.health:", enemy.health)
+
+    ###dibujar la granada en screen cuando se ejecuta la accion
 
     # -----------------------EXPLOSION GRENADE
 
@@ -445,10 +455,10 @@ class Explosion(pygame.sprite.Sprite):
         self.rect_center = (x, y)
         self.counter = 0
 
-    def updatee(self):
+    ##idem
+    def updatee(self):  # update explosion animation
         EXPLOSION_SPEED = 4
 
-        # update explosion animation
         self.counter += 1
         if self.counter >= EXPLOSION_SPEED:
             self.counter = 0
@@ -469,20 +479,20 @@ explosion_group = pygame.sprite.Group()
 ##-------------boxes--------------
 item_box_group = pygame.sprite.Group()
 # temp - create item boxes
-item_box = ItemBox("Health", 200, 250)
+item_box = ItemBox("Grenade", 200, 250)
 item_box_group.add(item_box)
-item_box = ItemBox("Ammo", 400, 250)
+item_box = ItemBox("bullet", 400, 250)
 item_box_group.add(item_box)
-item_box = ItemBox("Grenade", 600, 250)
+item_box = ItemBox("Health", 600, 250)
 item_box_group.add(item_box)
 
 
 ##-------------boxes--------------
-player = Soldier("player", 50, 300, 0.09, 5, 4, 10)  # creo una instancia
-health_bar = HealthBar(10, 10, player.health, player.health)
+player = Soldier("player", 50, 300, 0.09, 5, 15, 10)  # creo una instancia
+health_bar = HealthBar(10, 10, player.health, player.max_health)
 
-enemy = Soldier("enemy", 300, 200, 0.04, 2, 20, 0)
-enemy2 = Soldier("enemy", 500, 200, 0.04, 5, 20, 0)
+enemy = Soldier("enemy", 300, 200, 0.04, 3, 20, 0)
+enemy2 = Soldier("enemy", 500, 200, 0.04, 6, 20, 0)
 enemy_group.add(enemy)
 enemy_group.add(enemy2)
 
@@ -493,24 +503,22 @@ while run:
     # show  player health
     health_bar.draw(player.health)
 
-    """ # show ammo
-    draw_text(f"AMMO: ", font, WHILE, 10, 35)
-    for x in range(player.ammo):
+    """ # show bullet
+    draw_text(f"bullet: ", font, WHILE, 10, 35)
+    for x in range(player.bullet):
         screen.blit(bullet_img, (90 + (x + 10), 40))
 
     # show grenade
     draw_text(f"GRENADE: ", font, WHILE, 10, 60)
     for x in range(player.grenades):
         screen.blit(grenade_img, (135 + (x + 15), 60)) """
-    # show ammo
-    draw_text(f"fAMMO: {player.ammo} ", font, WHILE, 10, 35)
-    for x in range(player.ammo):
-        screen.blit(bullet_img, (90 + (x + 10), 40))
+
+    # show bullet
+    draw_text(f"BULLET: {player.bullet} ", font, WHILE, 20, 35)
 
     # show grenade
-    draw_text(f"GRENADE: {player.grenades} ", font, WHILE, 10, 60)
-    for x in range(player.grenades):
-        screen.blit(grenade_img, (135 + (x + 15), 60))
+    draw_text(f"GRENADE: {player.grenades} ", font, WHILE, 20, 60)
+
     # player.ai()
     player.update()
     player.draw()
@@ -539,8 +547,8 @@ while run:
             # shoot bullet
             player.shoot()
 
-            # thow granades
-        elif grenade and grenade_thrown == False and player.grenades > 0:
+            # tirar granades
+        elif grenade and tirar_granada == False and player.grenades > 0:
             grenade = Grenade(
                 player.rect.centerx + (0.5 * player.rect.size[0] * player.direction),
                 player.rect.top,
@@ -550,7 +558,7 @@ while run:
 
             # reduce grenades
             player.grenades -= 1
-            grenade_thrown = True
+            tirar_granada = True
             print("player.grenades:", player.grenades)
 
         if player.in_air:
@@ -577,7 +585,7 @@ while run:
             if event.key == pygame.K_g:
                 granade = True
                 print("granade:", granade)
-                grenade_thrown = True  # granada lanzada
+                tirar_granada = True  # granada lanzada
             if event.key == pygame.K_s and player.alive:
                 player.jump = True
             if event.key == pygame.K_ESCAPE:
@@ -593,8 +601,8 @@ while run:
                 shoot = False
             if event.key == pygame.K_g:
                 granade = False
-                grenade_thrown = False  # granada lanzada
-                print(grenade_thrown)
+                tirar_granada = False  # granada lanzada
+                print(tirar_granada)
 
     pygame.display.update()
 pygame.quit()
